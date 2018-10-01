@@ -29,10 +29,14 @@ for text in records_str:
     composers = ( [ re.sub( r"\(.*\)", '', composer_str).strip() for composer_str in record_str['Composer'].split(';') if composer_str.strip() != ''] if 'Composer' in record_str else [])
     composition_year = None
     if 'Composition Year' in record_str:
-        r = re.compile(r"(\d{4})")
-        m = r.match(record_str['Composition Year'])
-        if m is not None:
+        m = re.search(r"(\d{4})", record_str['Composition Year'])
+        if m:
             composition_year = int(m.group(1))
+        else:
+            m = re.search(r"(\d{2})th century", record_str['Composition Year'])
+            if m:
+                composition_year = int(m.group(1)) * 100 - 1
+
     keys = [key.strip() for key in record_str['Key'].split(';') if key.strip() != ''] if 'Key' in record_str else []
     record = { 'Title': title, 'Composers':composers, 'Composition Year': composition_year, 'Keys': keys}
     records.append(record)
