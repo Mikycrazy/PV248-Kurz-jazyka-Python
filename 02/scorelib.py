@@ -51,11 +51,10 @@ class Print(object):
         str_voices = [v for k,v in dict_props.items() if 'Voice' in k]
         voices = []
         for text in str_voices:
-            r = re.compile(r"^([\d\w]+--[\d\w]+)")
-            m = r.match(text)
+            m = re.search(r"^([\d\w]+--[\d\w]+)", text)
             voice_range = m.group(1) if m is not None else None 
-            if voice_range is not None:
-                parts = text.split(',')
+            if voice_range:
+                parts = [ x.strip() for x in text.split(',') ]
                 voice_name = str.join(", ",parts[1:])
             else:
                 voice_name = text
@@ -114,9 +113,13 @@ class Voice(object):
         self.name = name
         self.range = range_val
     
-    def __str__(self):
-        if self.range is None:
+    def __str__(self):      
+        if not self.range and not self.name:
+            return ''
+        elif not self.range and self.name:
             return self.name
+        elif self.range and not self.name:
+            return self.range
         else:
             return "{}, {}".format(self.range, self.name)
 
@@ -127,7 +130,7 @@ class Person(object):
         self.died = died
 
     def __str__(self):
-        if self.born is None and self.died is None:
+        if not self.born and not self.died:
             return self.name
         else:
             return "{} ({}--{})".format(self.name, xstr(self.born), xstr(self.died))
