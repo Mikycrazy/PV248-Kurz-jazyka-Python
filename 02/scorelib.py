@@ -29,14 +29,14 @@ def load(filename):
 class Print(object):
     def __init__(self, text):
         matches = re.finditer(r"(.*): (.*)$", text, re.MULTILINE)   
-        dict_props = { match.group(1):match.group(2).strip() for match in matches }       
+        dict_props = { match.group(1):match.group(2).strip() for match in matches }   
+            
         print_id = int(dict_props['Print Number'])
         partiture = True if dict_props['Partiture'].lower().strip() == 'yes' else False
         name = ( dict_props['Edition'] if 'Edition' in dict_props else None ) 
         editors = []
         if 'Editor' in dict_props:
-          editors = [ ParsePerson(editor) for editor in [ editor.strip() for editor in dict_props['Editor'].split(';') if editor.strip() != '']]
-          
+          editors = [ ParsePerson(editor) for editor in [ editor.strip() for editor in dict_props['Editor'].split(';') if editor.strip() != '']]      
         title = ( dict_props['Title'] if 'Title' in dict_props else None ) 
         incipit = ( dict_props['Incipit'] if 'Incipit' in dict_props else None ) 
         key = ( dict_props['Key'] if 'Key' in dict_props else None )
@@ -47,21 +47,7 @@ class Print(object):
             m = r.match(dict_props['Composition Year'])
             if m is not None:
                 year = int(m.group(1))
-
-        str_voices = [v for k,v in dict_props.items() if 'Voice' in k]
-        voices = []
-        for text in str_voices:
-            m = re.search(r"^([\d\w]+--[\d\w]+)", text)
-            voice_range = m.group(1) if m is not None else None 
-            if voice_range:
-                parts = [ x.strip() for x in text.split(',') ]
-                voice_name = str.join(", ",parts[1:])
-            else:
-                voice_name = text
-            voice = Voice(voice_name, voice_range)
-            voices.append(voice)
-
-
+        voices = [ ParseVoice(v) for k,v in dict_props.items() if 'Voice' in k]
         composition_authors = []
         if 'Composer' in dict_props:
           composition_authors = [ ParsePerson(composer) for composer in [ composer.strip() for composer in dict_props['Composer'].split(';') if composer.strip() != '']]
@@ -69,7 +55,6 @@ class Print(object):
         self.print_id = print_id
         self.partiture = partiture
         self.edition = Edition(name, editors, Composition(title, incipit, key, genre, year, voices, composition_authors))
-        pass
 
     def format(self):
         print("Print Number: {}".format(self.print_id))
@@ -86,7 +71,7 @@ class Print(object):
         print("Incipit: {}".format(xstr(self.edition.composition.incipit)))
 
     def composition(self):
-        pass
+        return self.edition.composition
 
 
 class Edition(object):
@@ -135,6 +120,7 @@ class Person(object):
         else:
             return "{} ({}--{})".format(self.name, xstr(self.born), xstr(self.died))
 
+
 def ParsePerson(text):
     born, died = ParseLifespan(text)
     name = re.sub( r"\(.*\)", '', text).strip()
@@ -157,6 +143,17 @@ def ParseLifespan(text):
         died = m.group("Died") if m.group("Died") else None
 
     return born, died
+
+def ParseVoice(text):
+    m = re.search(r"^([\d\w]+--[\d\w]+)", text)
+    voice_range = m.group(1) if m else None 
+    if voice_range:
+        parts = [ x.strip() for x in text.split(',') ]
+        voice_name = str.join(", ",parts[1:])
+    else:
+        voice_name = text
+    voice = Voice(voice_name, voice_range)
+    return voice
 
 
 def xstr(s):
