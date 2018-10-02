@@ -23,7 +23,7 @@ with open(fileName,'r', encoding='utf-8') as f:
 # Process data into convenient format
 records = []
 for text in records_str:
-    matches = re.finditer(r"(.*): (.*)$", text, re.MULTILINE)   
+    matches = re.finditer(r"^([^:]*):(.*)$", text, re.MULTILINE)   
     record_str = { match.group(1):match.group(2).strip() for match in matches }
     title = ( record_str['Title'] if 'Title' in record_str else None ) 
     composers = ( [ re.sub( r"\(.*\)", '', composer_str).strip() for composer_str in record_str['Composer'].split(';') if composer_str.strip() != ''] if 'Composer' in record_str else [])
