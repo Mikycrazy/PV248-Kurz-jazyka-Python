@@ -15,6 +15,7 @@ def load(filename):
                 text = ""
             else:
                 text += line
+        records_str.append(text)
 
     prints = []
     for text in records_str:
@@ -28,7 +29,7 @@ def load(filename):
 
 class Print(object):
     def __init__(self, text):
-        matches = re.finditer(r"(.*): (.*)$", text, re.MULTILINE)   
+        matches = re.finditer(r"^([^:]*):(.*)$", text, re.MULTILINE)   
         dict_props = { match.group(1):match.group(2).strip() for match in matches }   
             
         print_id = int(dict_props['Print Number'])
@@ -128,7 +129,7 @@ def ParsePerson(text):
 
 
 def ParseLifespan(text):
-    regex = r"\((?P<Born>\d{4})?-{1,2}(?P<Died>\d{4})?.*\)"
+    regex = r"\((?P<Born>\d{4})?[^-]*-{1,2}(?P<Died>\d{4})?.*\)"
     m = re.search(regex, text)
     born = None
     died = None
