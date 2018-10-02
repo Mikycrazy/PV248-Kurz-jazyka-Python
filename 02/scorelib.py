@@ -137,10 +137,14 @@ def ParseLifespan(text):
         died = m.group("Died") if m.group("Died") else None
         return born, died
     
-    r = re.compile(r"\(\+(?P<Died>\d{4})\)")
-    m = r.match(text)
-    if m is not None:
+    m = re.search(r"\(\+(?P<Died>\d{4})\)", text)
+    if m:
         died = m.group("Died") if m.group("Died") else None
+
+    m = re.search(r"\(\*(?P<Born>\d{4})\)", text)
+    if m:
+        born = m.group("Born") if m.group("Born") else None
+
 
     return born, died
 
