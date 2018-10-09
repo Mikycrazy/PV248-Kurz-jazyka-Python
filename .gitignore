@@ -105,3 +105,4 @@ venv.bak/
 .vscode/launch.json
 .vscode/settings.json
 out.txt
+*.dat
