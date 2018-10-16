@@ -60,7 +60,7 @@ def create_score(conn, composition):
     score_id = cur.lastrowid
 
     for idx,voice in enumerate(composition.voices):    
-        create_voice(conn, score_id, idx, voice)
+        create_voice(conn, score_id, idx + 1, voice)
 
     for person in composition.authors:
         person_id = create_or_update_person(conn, person)
