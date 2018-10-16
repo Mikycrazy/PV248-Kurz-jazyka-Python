@@ -106,3 +106,4 @@ venv.bak/
 .vscode/settings.json
 out.txt
 *.dat
+03/composer_view.sql
