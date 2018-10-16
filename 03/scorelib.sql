@@ -12,7 +12,7 @@ create table person ( id integer primary key not null,
 create table score ( id integer primary key not null,
                      name varchar,
                      genre varchar,
-                     key varchar,
+                     [key] varchar,
                      incipit varchar,
                      year integer );
 
@@ -49,7 +49,7 @@ create table edition_author( id integer primary key not null,
 -- part of the print. In all the above tables, 'id' is an auto-generated
 -- primary key. For print, however, this is the value of the 'Print Number'
 -- field from the text file.
-create table print ( id integer primary key not null,
+create table [print] ( id integer primary key not null,
                      partiture char(1) default 'N' not null, -- N = No, Y = Yes, P = Partial
                      edition integer references edition( id ) );
 
