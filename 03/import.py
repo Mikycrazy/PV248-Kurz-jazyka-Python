@@ -5,6 +5,7 @@ import os.path
 from sqlite3 import Error
 
 import scorelib
+from scorelib import Voice
 
 
 def create_connection(db_file):
@@ -28,17 +29,22 @@ def create_print(conn, print):
     sql = ''' INSERT INTO print(id, partiture, edition)
               VALUES(?,?,?) '''
     
-    edition_id = create_edition(conn, print.edition)
+    edition_id = create_or_get_edition(conn, print.edition)
 
     cur = conn.cursor()
     cur.execute(sql, (print.print_id ,'Y' if print.partiture else 'N', edition_id))
     return cur.lastrowid
 
-def create_edition(conn, edition):
-    sql = ''' INSERT INTO edition(score, name)
-              VALUES(?,?) '''
+def create_or_get_edition(conn, edition):
 
-    score_id = create_score(conn, edition.composition)
+    edition_id = try_get_edition(conn, edition)
+    if edition_id:
+        return edition_id
+
+    sql = ''' INSERT INTO edition(score, name)
+            VALUES(?,?) '''
+
+    score_id = create_or_get_score(conn, edition.composition)
 
     cur = conn.cursor()
     cur.execute(sql, (score_id,edition.name))
@@ -50,13 +56,87 @@ def create_edition(conn, edition):
         
     return edition_id
 
-def create_score(conn, composition):
-    sql = ''' INSERT INTO score(name, genre, key, incipit, year)
-              VALUES(?,?,?,?,?) '''
-    
+def try_get_edition(conn, edition):
+    select_sql = ''' SELECT * FROM edition WHERE name=?'''
 
     cur = conn.cursor()
-    cur.execute(sql, (composition.name, composition.genre, composition.key, composition.incipit, composition.year))
+    cur.execute(select_sql, (edition.name,))
+    rows = cur.fetchall()
+
+    score_id = get_score_id(conn, edition.composition)
+    if not score_id:
+        return None
+
+    for row in rows:
+        edition_id = row[0]
+
+        editors_match = True
+        actual_editor_ids = get_editor_ids_by_edition(conn, edition_id)
+        current_editor_ids = []
+        for person in edition.authors:
+            data_row = select_person_row_by_name(conn, person.name)
+            if data_row:
+                current_editor_ids.append(int(data_row[0]))
+            else:
+                editors_match = False
+                break
+
+        if editors_match:
+            editors_match = set(actual_editor_ids) == set(current_editor_ids)
+
+        if score_id == row[1] and editors_match:
+            return edition_id
+    return None
+
+def get_score_id(conn, composition):
+    select_sql = ''' SELECT * FROM score WHERE name=? and genre=? and key=? and incipit=?'''
+
+    cur = conn.cursor()
+    cur.execute(select_sql, (composition.name, composition.genre, composition.key, composition.incipit))
+    rows = cur.fetchall()
+    for row in rows:
+        score_id = row[0]
+        voices_match, composers_match = (True, True)
+        voices = get_voices_by_score(conn, score_id)
+        if(len(voices) == len(composition.voices)):
+            for idx,voice in enumerate(composition.voices):
+                expected_voice = voices[idx]
+                if voice.name != expected_voice.name or voice.range != expected_voice.range:
+                    voices_match = False
+                    break
+        else:
+            voices_match = False
+
+        actual_author_ids = get_author_ids_by_score(conn, score_id)
+        current_author_ids = []
+        for person in composition.authors:
+            data_row = select_person_row_by_name(conn, person.name)
+            if data_row:
+                current_author_ids.append(int(data_row[0]))
+            else:
+                composers_match = False
+                break
+        
+        if composers_match:
+            composers_match = set(actual_author_ids) == set(current_author_ids)
+
+        if voices_match and composers_match:
+            return score_id
+
+    return None
+
+def create_or_get_score(conn, composition):
+
+    score_id = get_score_id(conn, composition)
+
+    if score_id is not None:
+        return score_id
+
+    insert_score_sql = ''' INSERT INTO score(name, genre, key, incipit, year)
+              VALUES(?,?,?,?,?) '''
+
+    cur = conn.cursor()
+    cur.execute(insert_score_sql, (composition.name, composition.genre, composition.key, composition.incipit, composition.year))
     score_id = cur.lastrowid
 
     for idx,voice in enumerate(composition.voices):    
@@ -75,6 +155,33 @@ def create_voice(conn, score_id, number, voice):
     cur = conn.cursor()
     cur.execute(sql, (number, score_id, voice.range, voice.name))
     return cur.lastrowid
+
+def get_voices_by_score(conn, score_id):
+    sql = ''' SELECT id, name, range FROM voice WHERE score = ?'''
+    cur = conn.cursor()
+    cur.execute(sql, (score_id,))
+    rows = cur.fetchall()
+
+    voices = []
+    for row in rows:
+        voices.append(Voice(row[1], row[2]))
+
+    return voices
+
+def get_author_ids_by_score(conn, score_id):
+    sql = ''' SELECT composer FROM score_author WHERE score = ?'''
+    cur = conn.cursor()
+    cur.execute(sql, (score_id,))
+    rows = cur.fetchall()
+    return [int(row[0]) for row in rows]
+
+def get_editor_ids_by_edition(conn, edition_id):
+    sql = ''' SELECT editor FROM edition_author WHERE edition = ?'''
+    cur = conn.cursor()
+    cur.execute(sql, (edition_id,))
+    rows = cur.fetchall()
+    return [int(row[0]) for row in rows]
+
 
 def add_author_to_edition(conn, edition_id, editor_id):
     sql = ''' INSERT INTO edition_author(edition, editor)
@@ -107,7 +214,7 @@ def create_or_update_person(conn, person):
     sql = ''' INSERT INTO person(born, died, name)
                VALUES(?,?,?) '''
     
-    data_row = select_person_by_name(conn, person.name)
+    data_row = select_person_row_by_name(conn, person.name)
     if data_row:
         personId = int(data_row[0])
         update = False
@@ -131,7 +238,7 @@ def create_or_update_person(conn, person):
         cur.execute(sql, (person.born, person.died, person.name))
     return cur.lastrowid
 
-def select_person_by_name(conn, name):
+def select_person_row_by_name(conn, name):
     cur = conn.cursor()
     cur.execute("SELECT * FROM person WHERE name=?", (name,))
     person = cur.fetchone()
@@ -171,8 +278,9 @@ def main():
     prints = scorelib.load(data_file)
     for p in prints:
         create_print(conn, p)
-
     conn.commit()
+
+
 
 if __name__ == '__main__':
     main()
