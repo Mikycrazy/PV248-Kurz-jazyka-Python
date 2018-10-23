@@ -92,7 +92,8 @@ def get_editors(conn, edition_id):
 def get_voices(conn, score_id):
     sql = '''   SELECT voice.name, voice.range, voice.number
                 FROM voice
-                WHERE voice.score = ? '''
+                WHERE voice.score = ?
+                ORDER BY voice.number '''
 
     cur = conn.cursor()
     rows = cur.execute(sql, (score_id,))
