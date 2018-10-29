@@ -41,14 +41,15 @@ with open(input_file, mode='r') as f:
     lines = [line.strip() for line in f.readlines()]
 
 equations = [parse_equation(line) for line in lines]
-merged = list()
+variables = list()
 for eq in equations:
     variables_chars_numbers = [ ord(key) for key in eq.keys() if len(key) > 0]
-    merged = list(set(merged) | set(variables_chars_numbers))
+    variables = list(set(variables) | set(variables_chars_numbers))
 
-min, max = side_values(merged)
+""" min, max = side_values(merged)
 
-variables = [chr(x) for x in range(min, max + 1)]
+variables = [chr(x) for x in range(min, max + 1)] """
+variables = [chr(x) for x in sorted(variables)]
 
 coeficient = [[(eq[x] if x in eq.keys() else 0) for x in variables] for eq in equations]
 constant = [eq[''] for eq in equations]
@@ -57,17 +58,18 @@ b = np.array(constant)
 
 m = np.asmatrix(a)
 c = np.column_stack((m, b))
-n = np.linalg.matrix_rank(np.asmatrix(a))
+rank_a = np.linalg.matrix_rank(np.asmatrix(a))
 rank_c = np.linalg.matrix_rank(c)
 
 for line in lines:
     print(line)
     
-if n == rank_c:
-    solutions = np.linalg.solve(a, b)
-    solutions_str = [variable + " = " + str(solutions[idx]) for idx, variable in enumerate(variables)]
-    print("solution: " + ', '.join(solutions_str))
-elif n > rank_c:
-    print("solution space dimension:" + n - rank_c)
+if rank_a == rank_c:
+    if rank_a == len(variables):
+        solutions = np.linalg.solve(a, b)
+        solutions_str = [variable + " = " + str(solutions[idx]) for idx, variable in enumerate(variables)]
+        print("solution: " + ', '.join(solutions_str))
+    elif rank_a < len(variables):
+        print("solution space dimension: " + str(len(variables) - rank_a))
 else:
     print("no solution")
