@@ -35,14 +35,16 @@ class Composition(object):
     def format_json(self):
         voices_json = {}
         if len(self.voices.keys()) > 0:
-            voices_json = {k:v.format_json() for  in range(1, sorted(self.voices.keys())[-1] + 1)}
+            keys = sorted(self.voices.keys())
+            voices_json = { k:(self.voices[k].format_json()) if k in keys else Voice() for k in range(1, keys[-1] + 1) }
 
         return { 'Title': self.name,
          'Incipit': self.incipit, 
          'Key': self.key,
          'Genre': self.genre,
          'Year': self.year, 
-         'Voices': {k:v.format_json() for k,v in sorted(self.voices.keys())},
+        #  'Voices': {k:v.format_json() for k,v in sorted(self.voices.keys())},
+         'Voices': voices_json,
          'Composer': [x.format_json() for x in self.authors] }
          
 
