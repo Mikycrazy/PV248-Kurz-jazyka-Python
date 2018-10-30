@@ -23,7 +23,7 @@ class Edition(object):
         return { 'Edition': self.name, 'Editor': [x.format_json() for x in self.authors], 'Composition': self.composition.format_json() }
 
 class Composition(object):
-    def __init__(self, name = None, incipit = None, key = None, genre = None, year = None, voices = [], authors = []):
+    def __init__(self, name = None, incipit = None, key = None, genre = None, year = None, voices = {}, authors = []):
         self.name = name
         self.incipit = incipit
         self.key = key
@@ -33,12 +33,16 @@ class Composition(object):
         self.authors = authors
 
     def format_json(self):
+        voices_json = {}
+        if len(self.voices.keys()) > 0:
+            voices_json = {k:v.format_json() for  in range(1, sorted(self.voices.keys())[-1] + 1)}
+
         return { 'Title': self.name,
          'Incipit': self.incipit, 
          'Key': self.key,
          'Genre': self.genre,
          'Year': self.year, 
-         'Voices': {idx+1:v.format_json() for idx,v in enumerate(self.voices)},
+         'Voices': {k:v.format_json() for k,v in sorted(self.voices.keys())},
          'Composer': [x.format_json() for x in self.authors] }
          
 

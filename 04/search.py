@@ -8,4 +8,4 @@ if len(sys.argv) < 2:
 name = sys.argv[1]
 prints = get_print(name)
 print(len(prints))
-print(json.dumps(prints, default=lambda x: x.format_json(), sort_keys=False, indent=2, ensure_ascii=True))
+print(json.dumps(prints, default=lambda x: x.format_json(), sort_keys=False, indent=2, ensure_ascii=False))

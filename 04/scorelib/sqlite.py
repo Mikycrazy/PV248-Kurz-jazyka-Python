@@ -1,5 +1,6 @@
 import sqlite3
 from sqlite3 import Error
+
 from .model import Person, Print, Voice
 
 
@@ -97,7 +98,7 @@ def get_voices(conn, score_id):
 
     cur = conn.cursor()
     rows = cur.execute(sql, (score_id,))
-    return [Voice(row[0], row[1]) for row in rows]
+    return {int(row[2]):Voice(row[0], row[1]) for row in rows}
 
 
 def create_connection(db_file):
@@ -107,4 +108,3 @@ def create_connection(db_file):
     except Error as e:
         print(e)
     return None
-
