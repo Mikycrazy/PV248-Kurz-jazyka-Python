@@ -5,13 +5,25 @@ import math
 
 A4 = 440
 C0 = A4*pow(2, -4.75)
-name = ["c","cis","d","es","e","f","βis","g","gis","a","bes","b"]
+name = ["c","cis","d","es","e","f","fis","g","gis","a","bes","b"]
 
 def pitch(freq):
-    h = round(6*math.log2(freq/C0))
-    octave = h // 6
-    n = h % 6
-    return name[n] + str(octave)
+    h = round(12*math.log2(freq/C0))
+    octave = h // 12
+    n = h % 12
+    p = name[n]
+    if octave == 3:
+       return p
+    if octave < 3:
+        p = p.title()
+    if octave < 2:
+        p = p + ('\'' * (3 - octave))
+    if octave > 3:
+        p = p + (',' * (octave - 3))
+    return p
+
+
+print(pitch(440))
 
 rate, audio = wavfile.read('06/SineWave_440Hz.wav')
 
@@ -41,24 +53,15 @@ for windows_idx, window in enumerate(spectrum):
         if((avg * 20) < value):
             peaks.append((idx, value))
     sort = sorted(peaks, key=lambda x: x[1], reverse=True)
+   
+    top = []
+    for i in range(3):
+        if len(sort) > 0:
+            item = sort[0]
+            top.append(item)
+            sort = [x for x in sort if abs(x[0] - item[0]) > 1]
 
-    chunks = []
-
-    chunk = []
-    for x in sort:
-        value = x[0]
-        if len(chunk) == 0:
-            chunk.append(x)
-            continue
-        
-        if round(avg(chunk) - value) <= 1:
-            chunk.append(x)
-            continue
-        else:
-            chunks.append(round(avg(chunk)))
-            chunk = []
-
-    top_freq = [pitch(x[0]) for x in chunks[:3]]
+    top_freq = [pitch(x[0]) for x in top]
     if len(top_freq) > 0:
         start = round(((windows_idx + 1) * 0.1), 1)
         end = round(((windows_idx + 1) * 0.1) + 0.1, 1)
