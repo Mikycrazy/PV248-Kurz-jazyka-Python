@@ -20,14 +20,12 @@ data = pd.melt(df, id_vars='student', value_vars=keys, value_name='score')
 data[['date','exercise']] = data.variable.str.split('/', n=1, expand=True)
 data['date'] =  pd.to_datetime(data['date'], format='%Y-%m-%d')
 data['date'] = (data['date'] - START_DATE).astype('timedelta64[D]')
-data.to_csv('student.csv', sep=';')
 
 if student_id == 'average':
-    tmp = data.groupby(['student', 'exercise', 'date']).sum().reset_index()
+    tmp = data.groupby(['exercise', 'date'])['score'].mean().reset_index()
 else:
     tmp = data[data['student'] == int(student_id)]
 
-tmp = tmp.groupby(['exercise', 'date'])['score'].mean().reset_index()
 date = tmp.groupby(['date'])['score'].sum().cumsum()
 tmp = tmp.groupby(['exercise'])['score'].sum()
 mean = tmp.mean()
@@ -50,4 +48,4 @@ if(slope > 0):
     d['date 16'] = date_16
     d['date 20'] = date_20
 
-print(json.dumps(d, sort_keys=False, indent=2))
+print(json.dumps(d, sort_keys=False, indent=2, ensure_ascii=False))

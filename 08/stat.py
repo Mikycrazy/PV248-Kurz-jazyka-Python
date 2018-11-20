@@ -13,15 +13,19 @@ def get_stats(df, mode):
     if mode == 'dates':
         column = ['date']
         df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+        data = df.groupby(['student', 'date'])['score'].sum().reset_index()
     elif mode == 'deadlines':
         column = ['variable']
+        data = df
     elif mode == 'exercises':
         column = ['exercise']
+        data = df.groupby(['student', 'exercise'])['score'].sum().reset_index()
 
-    data = df.groupby(column)['score'].agg([pd.np.mean, pd.np.median, percentile(25), percentile(75)])  
-    data['passed'] =  df[df['score'] > 0].groupby(column)['score'].count()
-    data = data.rename(index=str, columns={"percentile_25": "first", "percentile_75": "last"})
-    return data.to_dict('index')
+    agg_data = data.groupby(column)['score'].agg([pd.np.mean, pd.np.median, percentile(25), percentile(75)])  
+    agg_data['passed'] = data[data['score'] > 0].groupby(column)['score'].count()
+    agg_data = agg_data.rename(index=str, columns={"percentile_25": "first", "percentile_75": "last"})
+    agg_data.fillna(0, inplace=True)
+    return agg_data.to_dict('index')
 
    
 if len(sys.argv) < 3:
@@ -35,4 +39,5 @@ keys = list(df)[1:]
 data = pd.melt(df, id_vars='student', value_vars=keys, value_name='score')
 data[['date','exercise']] = data.variable.str.split('/', n=1, expand=True)
 data['date'] =  pd.to_datetime(data['date'], format='%Y-%m-%d')
-print(json.dumps(get_stats(data, mode), sort_keys=False, indent=2, ensure_ascii=True))
+d = get_stats(data, mode)
+print(json.dumps(d, sort_keys=False, indent=2, ensure_ascii=False))
