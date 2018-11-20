@@ -3,9 +3,6 @@ import numpy as np
 import sys
 import json
 
-sys.argv[1] = "08/points.csv"
-sys.argv[2] = "exercises"
-
 def percentile(n):
     def percentile_(x):
         return np.percentile(x, n)
