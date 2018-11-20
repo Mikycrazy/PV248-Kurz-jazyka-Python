@@ -36,17 +36,17 @@ passed = tmp[tmp.gt(0)].count()
 total = tmp.sum()
 
 A = np.vstack([date.index, np.ones(len(date.index))]).T
-coef, _ = np.linalg.lstsq(A, date, rcond=None)[0]
+slope, _ = np.linalg.lstsq(A, date, rcond=None)[0]
 
 # slope, intercept, r_value, p_value, std_err = stats.linregress(date.index, date)
-xp = range(60, 160)
-reg = pd.Series([(START_DATE + np.timedelta64(x,'D')) for x in xp], [coef * x for x in xp])
-print(reg)
+# xp = range(60, 160)
+# reg = pd.Series([(START_DATE + np.timedelta64(x,'D')) for x in xp], [slope * x for x in xp])
+# print(reg)
 
-d = {'mean': mean, 'median': median, 'passed': int(passed), 'total': total, 'regression slope': coef}
-if(coef > 0):
-    date_16 = (START_DATE + np.timedelta64(int(16/coef),'D')).astype(datetime.datetime).strftime('%Y-%m-%d')
-    date_20 = (START_DATE + np.timedelta64(int(20/coef),'D')).astype(datetime.datetime).strftime('%Y-%m-%d')
+d = {'mean': mean, 'median': median, 'passed': int(passed), 'total': total, 'regression slope': slope}
+if(slope > 0):
+    date_16 = (START_DATE + np.timedelta64(int(16/slope),'D')).astype(datetime.datetime).strftime('%Y-%m-%d')
+    date_20 = (START_DATE + np.timedelta64(int(20/slope),'D')).astype(datetime.datetime).strftime('%Y-%m-%d')
     d['date 16'] = date_16
     d['date 20'] = date_20
 
