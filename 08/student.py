@@ -26,16 +26,19 @@ if student_id == 'average':
 else:
     tmp = data[data['student'] == int(student_id)]
 
+
 date = tmp.groupby(['date'])['score'].sum().cumsum()
+date.to_csv('student.csv', sep=';')
 tmp = tmp.groupby(['exercise'])['score'].sum()
 mean = tmp.mean()
 median = tmp.median()
 passed = tmp[tmp.gt(0)].count()
 total = tmp.sum()
 
-A = np.vstack([date.index, np.ones(len(date.index))]).T
-slope, _ = np.linalg.lstsq(A, date, rcond=None)[0]
-
+x = date.index[:,np.newaxis]
+#A = np.vstack([date.index, np.ones(len(date.index))]).T
+a = np.linalg.lstsq(x, date, rcond=None)[0]
+slope = a[0]
 # slope, intercept, r_value, p_value, std_err = stats.linregress(date.index, date)
 # xp = range(60, 160)
 # reg = pd.Series([(START_DATE + np.timedelta64(x,'D')) for x in xp], [slope * x for x in xp])
