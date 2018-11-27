@@ -15,7 +15,7 @@ student_id = sys.argv[2]
 START_DATE = np.datetime64('2018-09-17')
 
 df = pd.read_csv(file_name, delimiter=',', encoding='latin1')
-keys = list(df)[1:]
+keys = [x for x in list(df) if x != 'student']
 data = pd.melt(df, id_vars='student', value_vars=keys, value_name='score')
 data[['date','exercise']] = data.variable.str.split('/', n=1, expand=True)
 data['date'] =  pd.to_datetime(data['date'], format='%Y-%m-%d')
