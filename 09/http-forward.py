@@ -1,22 +1,23 @@
 import http.server
-import urllib3
 import json
 import urllib.request
-import socket
 from urllib.error import HTTPError, URLError
+import socket
+import sys
 
 PORT = 9999
-UPSTREAM = 'httpbin.org/ip'
+UPSTREAM = 'example.com'
+TIMEOUT = 1
 
 class MyHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
-        url = 'http://{}'.format(UPSTREAM)
+        url = 'http://' + UPSTREAM
         d={}
         try:    
             headers = {x[0]:x[1] for x in self.headers._headers if x[0] not in ('Host')}
             req = urllib.request.Request(url, headers=headers)
-            r = urllib.request.urlopen(req, timeout=1)
+            r = urllib.request.urlopen(req, timeout=TIMEOUT)
             data = r.read()
             d = {'code': r.status, 'headers': {k:v for k,v in r.headers._headers }}
 
@@ -27,10 +28,10 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
         except socket.timeout:
             d = {'code': "timeout"}
-        except (URLError, HTTPError) as error:
-            d = {'code': "500", 'content': error.__str__()}
+        except HTTPError as error:
+            d = {'code': error.code}
         except Exception as ex:
-            print(ex)
+            d = {'code': ex.__str__()}
         finally:
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -40,18 +41,18 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
     
     def do_POST(self):
         
-            content_length = int(self.headers['Content-Length'])    # <--- Gets the size of data
-            post_data = self.rfile.read(content_length)             # <--- Gets the data itself
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
             d={}
             try:
                 my_json = json.loads(post_data.decode('utf8').replace("'", '"'))
                 url = my_json['url']
                 headers = my_json['headers'] if 'headers' in my_json.keys() else {}
-                timeout = int(my_json['timeout']) if 'timeout' in my_json.keys() else 1
+                timeout = int(my_json['timeout']) if 'timeout' in my_json.keys() else TIMEOUT
                 request_type = my_json['type'] if 'type' in my_json.keys() else 'GET'
                 content = None
                 if request_type == 'POST':
-                    content = my_json['content'].encode('utf8')        
+                    content = my_json['content'].encode('utf8')
 
                 req = urllib.request.Request(url, headers=headers, data=content)
                 r = urllib.request.urlopen(req, timeout=timeout)
@@ -67,10 +68,10 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 d = {'code': "invalid json" }
             except socket.timeout:
                 d = {'code': "timeout"}
-            except (URLError, HTTPError) as error:
-                d = {'code': "500", 'content': error.__str__()}
+            except HTTPError as error:
+                d = {'code': error.code}
             except Exception as ex:
-                print(ex)
+                d = {'code': ex.__str__()}
             finally:
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
@@ -81,8 +82,13 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
 
 
-server_address = ('127.0.0.1', PORT)
+if len(sys.argv) < 3:
+    exit("Too less arguments calling script")
 
+PORT = int(sys.argv[1])
+UPSTREAM = sys.argv[2]
+
+server_address = ('127.0.0.1', PORT)
 try:
     server = http.server.HTTPServer(server_address, MyHandler)
     print('Started http server')
