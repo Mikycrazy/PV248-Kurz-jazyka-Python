@@ -28,7 +28,6 @@ else:
 
 
 date = tmp.groupby(['date'])['score'].sum().cumsum()
-date.to_csv('student.csv', sep=';')
 tmp = tmp.groupby(['exercise'])['score'].sum()
 mean = tmp.mean()
 median = tmp.median()
