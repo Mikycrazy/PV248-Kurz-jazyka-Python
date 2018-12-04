@@ -3,20 +3,12 @@ import asyncio
 import sys
 from aiohttp import web
 from aiohttp import streamer
-from concurrent.futures import ThreadPoolExecutor
 
 import re
 
 regex = r"\/(.+?)(\..+?)(\/.*)?$"
 DIR = '10/static'
 PORT = 15555
-
-e = ThreadPoolExecutor()
-async def read_file(file_path):
-     loop = asyncio.get_event_loop()
-     with open(file_path) as f:
-        return (await loop.run_in_executor(e, f.read))
-
 
 def get_file_name(path):
     m = re.search(regex, path)
@@ -70,7 +62,7 @@ async def post_handle(request):
     file_path = os.path.join(DIR, (file_name + file_extension))
     if not os.path.exists(file_path):
         return web.Response(
-            body='File <{file_name}> does not exist'.format(file_name=file_name),
+            body='File <{file_path}> does not exist'.format(file_path=file_path),
             status=404
         )
 
@@ -91,7 +83,7 @@ async def get_handle(request):
     file_path = os.path.join(DIR, (file_name + file_extension))
     if not os.path.exists(file_path):
         return web.Response(
-            body='File <{file_name}> does not exist'.format(file_name=file_name),
+            body='File <{file_path}> does not exist'.format(file_path=file_path),
             status=404
         )
 
@@ -102,7 +94,7 @@ async def get_handle(request):
     
     return web.Response(
         body=file_sender(file_path=file_path),
-        headers={ "Content-disposition": "attachment; filename={file_name}".format(file_name=file_name) }
+        headers={ "Content-disposition": "attachment; filename={file_path}".format(file_path=file_path) }
     )
 
 
@@ -119,6 +111,12 @@ async def file_sender(writer, file_path=None):
             await writer.write(chunk)
             chunk = f.read(2 ** 16) 
 
+if len(sys.argv) < 3:
+    exit("Too less arguments calling script")
+
+PORT = int(sys.argv[1])
+DIR = sys.argv[2]
+
 if sys.platform == 'win32':
     loop = asyncio.ProactorEventLoop()
     asyncio.set_event_loop(loop)
@@ -127,4 +125,4 @@ app = web.Application()
 app.add_routes([web.get('/{tail:.*}', get_handle),
                 web.post('/{tail:.*}', post_handle)])
 
-web.run_app(app, port=15555)
+web.run_app(app, port=PORT)
