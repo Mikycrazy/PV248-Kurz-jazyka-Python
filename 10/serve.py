@@ -58,6 +58,7 @@ def make_cgi_env(request, file_path, path_info):
         os.environ.update(env)
 
 async def post_handle(request):
+
     file_name, file_extension, path_info = get_file_name(request.path)
     file_path = os.path.join(DIR, (file_name + file_extension))
     if not os.path.exists(file_path):
@@ -72,9 +73,24 @@ async def post_handle(request):
     if file_extension == '.cgi':
         make_cgi_env(request, file_path, path_info)
         result = await run_cgi(file_path, data)
-        return web.Response(text=result)
+        lines = result.splitlines()
+        headers = {}
+        index = 0
+        for idx, line in enumerate(lines):
+            if not line:
+                index = idx
+                break
+                
+            parts = line.split(':')
+            headers[parts[0]] = parts[1].strip()
 
-    
+        return web.Response(text='\n'.join(lines[index+1:]), headers=headers)
+
+
+    return web.Response(
+            body='File <{file_path}> is not valid for script running'.format(file_path=file_path),
+            status=503
+        )
 
 
 async def get_handle(request):
@@ -90,7 +106,18 @@ async def get_handle(request):
     if file_extension == '.cgi':
         make_cgi_env(request, file_path, path_info)
         result = await run_cgi(file_path)
-        return web.Response(text=result)
+        lines = result.splitlines()
+        headers = {}
+        index = 0
+        for idx, line in enumerate(lines):
+            if not line:
+                index = idx
+                break
+
+            parts = line.split(':')
+            headers[parts[0]] = parts[1].strip()
+
+        return web.Response(text='\n'.join(lines[index+1:]), headers=headers)
     
     return web.Response(
         body=file_sender(file_path=file_path),
