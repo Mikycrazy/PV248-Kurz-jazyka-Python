@@ -1,0 +1,79 @@
+from HTTPClient import Client
+import json
+import asyncio
+import sys
+
+HOST = 'localhost'
+PORT = 15555
+
+PIECE_X = 'X'
+PIECE_O = 'O'
+PIECE_EMPTY = '_'
+
+def get_peace(player):
+    if player == 1:
+        return PIECE_X
+    elif player == 2:
+        return PIECE_O
+    else:
+        return PIECE_EMPTY   
+
+async def main():
+    gameid = None
+    player = None
+
+    async with Client(HOST, PORT) as client:
+        games = await client.get_games()
+        if len(games) == 0:
+            print('No games')
+        else:    
+            for record in games:
+                print('{}: {}'.format(record['id'], record['name']))
+
+        input_str = input()
+        if input_str == 'new':
+            gameid = await client.create_game()
+            player = 1
+        else:
+            gameid = int(input_str)
+            player = 2
+
+        waiting = False
+        while True:  
+            status = await client.get_status(gameid)    
+            if 'board' in status:     
+                if status['next'] == player:
+                    waiting = False
+                    for row in status['board']:
+                        print(''.join([get_peace(x) for x in row]))
+                    while True:
+                        text = input('your turn (o):')
+                        parts = text.strip().split()
+                        try:
+                            x = int(parts[0])
+                            y = int(parts[1])
+                        except:
+                            print("Invalid input")
+                            continue
+                        
+                        resp = await client.play(gameid, player, x, y)
+                        if resp['status'] == 'ok':
+                            break
+                        else:
+                            print(resp['message'])  
+                else:
+                    if not waiting:
+                        print('waiting for the other player') 
+                        waiting = True  
+            else:
+                if status['winner'] == player:
+                    print('you win')
+                elif status['winner'] == 0:
+                    print('its a tie')
+                else:
+                    print('you lose')
+                break
+            await asyncio.sleep(1)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
