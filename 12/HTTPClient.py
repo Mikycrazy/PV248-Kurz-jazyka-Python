@@ -34,9 +34,8 @@ class Client():
         data = await self.run_command('list')
         return data
 
-
-    async def create_game(self):
-        data = await self.run_command('start', name='a')
+    async def create_game(self, name='game'):
+        data = await self.run_command('start', name=name)
         return int(data['id'])
 
     async def play(self, gameid, player, x, y):

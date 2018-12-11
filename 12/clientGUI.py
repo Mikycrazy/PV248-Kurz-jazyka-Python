@@ -9,12 +9,25 @@ SIZE = 560
 BOARD_PADDING = 40
 FIELD_SIZE = (SIZE - (2 * BOARD_PADDING)) // 3
 
+pygame.init()
+pygame.display.set_caption("TicTacTeo")
 clock = pygame.time.Clock()
 gameDisplay = pygame.display.set_mode((SIZE, SIZE))
+
 white = (255, 255, 255)
 black = (0,0,0)
+gray = (200,200,200)
+light_gray = (220,220,220)
 green = (0, 255, 128)
 red = (255, 64, 64)
+bright_red = (255,0,0)
+bright_green = (0,255,0)
+
+
+class Menu():
+
+    def __init__(self, client):
+        pass
 
 class Game():
 
@@ -46,47 +59,45 @@ class Game():
             pygame.draw.line(gameDisplay, black, (x, BOARD_PADDING), (x, SIZE - BOARD_PADDING), 2)
             pygame.draw.line(gameDisplay, black, (BOARD_PADDING, x), (SIZE - BOARD_PADDING, x), 2)
 
-    def display_text(self, text, place):
-        font = pygame.font.SysFont("Arial", 100, True) 
-        text_ = font.render(text, True, black)
-        rect = text_.get_rect()
-        rect.center = place
-        gameDisplay.blit(text_, rect) 
-
     def display_turn(self):
         font = pygame.font.SysFont("Arial", 30) 
         text_ = font.render(("Player Turn : " + self.get_peace(self.turn)), True, black)
         rect = text_.get_rect()
-        rect.center = (100, 20)
+        rect.midleft = (BOARD_PADDING, 20)
         gameDisplay.blit(text_, rect)   
 
-    def change_turn(self):
-        if self.turn == 1:
-            self.turn = 2
-        else:
-            self.turn = 1    
+    def display_player(self):
+        font = pygame.font.SysFont("Arial", 30) 
+        text_ = font.render(("Player: " + self.get_peace(self.player)), True, black)
+        rect = text_.get_rect()
+        rect.midright = (SIZE - BOARD_PADDING, 20)
+        gameDisplay.blit(text_, rect)    
 
     def display_status(self):
         for x in range(3):
             for y in range(3):
                 if self.board[x][y] != 0:
-                    self.display_text(self.get_peace(self.board[x][y]), self.display[x][y])
+                    display_text(self.get_peace(self.board[x][y]), self.display[x][y], 40)
 
     async def mouse_event(self):
         mouse = pygame.mouse.get_pos()
         click = pygame.mouse.get_pressed()
 
         if click[0] == 1:
-            y = (mouse[0] - BOARD_PADDING) // FIELD_SIZE
-            x = (mouse[1] - BOARD_PADDING) // FIELD_SIZE
-            print((self.turn, self.player))
+            y = (mouse[1] - BOARD_PADDING) // FIELD_SIZE
+            x = (mouse[0] - BOARD_PADDING) // FIELD_SIZE
+            print((x, y))
             if self.turn == self.player:
-                self.change_turn()
                 await self.client.play(self.gameid, self.player, x, y)
 
 
     async def update_status(self):
         status = await self.client.get_status(self.gameid)  
+
+        if 'winner' in status:
+            self.gameOver(status['winner'])
+            return False
+
 
         if 'board' in status:
             self.board = status['board']
@@ -94,33 +105,87 @@ class Game():
         if 'next' in status:
             self.turn = status['next']
 
-        if 'winner' in status:
-            self.gameOver(status['winner'])
+        return True
 
     def gameOver(self, winner):
-        self.over = True
-        font = pygame.font.SysFont("Arial", 40, True) 
-        text = "You win" if winner == self.player else "You lose"
+        gameDisplay.fill(white)    
+        font = pygame.font.SysFont("Arial", 80, True) 
+        text = "Draw" if winner == 0 else "You win" if winner == self.player else "You lose"
         text_ = font.render(text, True, red)
         rect = text_.get_rect()
         rect.center = (SIZE // 2, SIZE // 2)
-        gameDisplay.fill(white)    
         gameDisplay.blit(text_, rect)
         pygame.display.update()
 
-async def main(): 
-    player = 1
-    gameid = 3
+def text_objects(text, font):
+    textSurface = font.render(text, True, black)
+    return textSurface, textSurface.get_rect()
 
-    if len(sys.argv) < 3:
-        exit("Too less arguments calling script")
+def display_text(text, place, size):
+    font = pygame.font.SysFont("Arial", size, True) 
+    text_ = font.render(text, True, black)
+    rect = text_.get_rect()
+    rect.center = place
+    gameDisplay.blit(text_, rect) 
 
-    gameid = int(sys.argv[1])
-    player = int(sys.argv[2])
+async def game_intro(client):
+    gameid = None
+    player = None
 
-    pygame.init()
-    pygame.display.set_caption("TicTacTeo")
-    async with Client(HOST, PORT) as client:
+
+
+    intro = True
+    while intro:
+        games = await client.get_games()
+        for event in pygame.event.get():
+            #print(event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+                
+        gameDisplay.fill(white)
+        largeText = pygame.font.SysFont('Ariel',80)
+        TextSurf, TextRect = text_objects("TicTacToe", largeText)
+        TextRect.center = ((SIZE/2),40)
+        gameDisplay.blit(TextSurf, TextRect)
+
+        mouse = pygame.mouse.get_pos()
+        click = pygame.mouse.get_pressed()
+        #print(mouse)
+
+        if  BOARD_PADDING + SIZE - (2 * BOARD_PADDING) > mouse[0] > BOARD_PADDING and 120 + 80 > mouse[1] > 120:
+            pygame.draw.rect(gameDisplay, bright_red, (BOARD_PADDING, 120, SIZE - (2 * BOARD_PADDING), 80))
+            if click[0] == 1:      
+                gameid = await client.create_game('game {}'.format(len(games) + 1))
+                player = 1
+                intro = False
+        else:
+            pygame.draw.rect(gameDisplay, gray, (BOARD_PADDING, 120, SIZE - (2 * BOARD_PADDING), 80))
+
+        display_text("New game", ((SIZE/2), 160), 40)
+        pygame.draw.line(gameDisplay, black, (BOARD_PADDING // 2, 210), (SIZE - (BOARD_PADDING // 2), 210), 2)
+
+
+        list_start_y = 220
+        list_item_size = 50
+        for i, game in enumerate(games):
+            if  BOARD_PADDING + SIZE - (2 * BOARD_PADDING) > mouse[0] > BOARD_PADDING and list_start_y + (i * (list_item_size + 5)) + list_item_size > mouse[1] > list_start_y + (i * (list_item_size + 5)):
+                pygame.draw.rect(gameDisplay, gray, (BOARD_PADDING, list_start_y + (i * (list_item_size + 5)), SIZE - (2 * BOARD_PADDING), list_item_size))
+                if click[0] == 1:
+                    print(game)
+                    gameid = game['id']
+                    player = 2
+                    intro = False
+            else:
+                pygame.draw.rect(gameDisplay, light_gray, (BOARD_PADDING, list_start_y + (i * (list_item_size + 5)), SIZE - (2 * BOARD_PADDING), list_item_size))
+            display_text(game['name'], ((SIZE//2), list_start_y + (i * (list_item_size + 5)) + list_item_size // 2), 25)
+
+        pygame.display.update()
+        clock.tick(15)
+
+    return (gameid, player)
+
+async def main_game(client, gameid, player): 
         game = Game(client, gameid, player)
         while True:
             for e in pygame.event.get():
@@ -129,16 +194,23 @@ async def main():
                     pygame.quit()
                     exit()
             
-            if not game.over:
+            if await game.update_status():
                 gameDisplay.fill(white)
-                game.draw_board()
-                await game.update_status()
+                game.draw_board() 
                 game.display_turn()
+                game.display_player()
                 game.display_status()
                 await game.mouse_event()
                 pygame.display.update()
+
             clock.tick(40)
 
+async def main(): 
+    async with Client(HOST, PORT) as client:
+        gameid, player = await game_intro(client)
+        await asyncio.sleep(0.5)
+        await main_game(client, gameid, player)
+
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(main())

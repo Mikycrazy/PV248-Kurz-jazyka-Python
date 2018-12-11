@@ -19,6 +19,7 @@ def get_peace(player):
         return PIECE_EMPTY   
 
 async def main():
+
     gameid = None
     player = None
 
@@ -30,13 +31,22 @@ async def main():
             for record in games:
                 print('{}: {}'.format(record['id'], record['name']))
 
-        input_str = input()
-        if input_str == 'new':
-            gameid = await client.create_game()
-            player = 1
-        else:
-            gameid = int(input_str)
-            player = 2
+        while True:
+            input_str = input()
+            if 'new' in input_str:
+                parts = input_str.split()
+                name = parts[1].strip() if len(parts) > 1 else ''
+                gameid = await client.create_game(name)
+                player = 1
+                break
+            else:
+                if input_str not in [x['id'] for x in games]:
+                    print('Invalid game \'{}\''.format(input_str))
+                else:
+                    gameid = int(input_str)
+                    player = 2
+                    break
+
 
         waiting = False
         while True:  
@@ -47,7 +57,7 @@ async def main():
                     for row in status['board']:
                         print(''.join([get_peace(x) for x in row]))
                     while True:
-                        text = input('your turn (o):')
+                        text = input('your turn ({piece}):'.format(piece = get_peace(player)))
                         parts = text.strip().split()
                         try:
                             x = int(parts[0])
@@ -67,11 +77,11 @@ async def main():
                         waiting = True  
             else:
                 if status['winner'] == player:
-                    print('you win')
+                    print('You win')
                 elif status['winner'] == 0:
-                    print('its a tie')
+                    print('Draw')
                 else:
-                    print('you lose')
+                    print('You lose')
                 break
             await asyncio.sleep(1)
 
