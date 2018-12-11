@@ -40,8 +40,11 @@ class Game:
         if player not in (1, 2):
             raise ValueError('Player {player} is not part of game'.format(player=player))
 
+        if x not in (0, 1, 2) or y not in (0, 1, 2):
+            raise ValueError('Invalid coordinates')
+
         self.state = 'Running'
-        self.board.place(self.get_peace(player), ((x * 3) + y))
+        self.board.place(self.get_peace(player), ((y * 3) + x))
 
     @staticmethod
     def get_player(peace):
@@ -68,7 +71,7 @@ class Handler:
         self.counter = Counter()
 
     async def handle_start(self, request):
-        name = request.rel_url.query['name']
+        name = request.rel_url.query['name'] if 'name' in request.rel_url.query else ''
         ID = self.counter()
 
         game_obj = Game(ID, name)
@@ -78,29 +81,36 @@ class Handler:
         return web.json_response(d)  
 
     async def handle_status(self, request):
-        ID = int(request.rel_url.query['game'])
+        try:
+            ID = int(request.rel_url.query['game'])
+        except:
+            raise web.HTTPBadRequest()
+
         if ID not in self.games:
             return web.Response(
-                body='Game with <{id}> does not exist'.format(id=ID),
+                body='Game <{id}> does not exist'.format(id=ID),
                 status=404
                 )
 
         d = self.games[ID].status()
         return web.json_response(d)    
 
+
     async def handle_play(self, request):
-        ID = int(request.rel_url.query['game'])
-        player = int(request.rel_url.query['player'])
-        x = int(request.rel_url.query['x'])
-        y = int(request.rel_url.query['y'])
+        try:
+            ID = int(request.rel_url.query['game'])
+            player = int(request.rel_url.query['player'])
+            x = int(request.rel_url.query['x'])
+            y = int(request.rel_url.query['y'])
+        except:
+            raise web.HTTPBadRequest()
 
         if ID not in self.games.keys():
             return web.Response(
-                body='Game with <{id}> does not exist'.format(id=ID),
+                body='Game <{id}> does not exist'.format(id=ID),
                 status=404
                 )
 
-        d = {}
         try:
             self.games[ID].play(player, x, y)
             d = {'status': 'ok'}
