@@ -3,6 +3,7 @@ import asyncio
 import sys
 from aiohttp import web
 from aiohttp import streamer
+import mimetypes
 
 import re
 
@@ -119,9 +120,14 @@ async def get_handle(request):
 
         return web.Response(text='\n'.join(lines[index+1:]), headers=headers)
     
+    cont_type = mimetypes.guess_type(file_path)
+    headers = {"Content-disposition": "attachment; filename={file_path}".format(file_path=file_path) }
+    if cont_type:
+        headers['Content-Type'] = cont_type[0]
+        
     return web.Response(
         body=file_sender(file_path=file_path),
-        headers={ "Content-disposition": "attachment; filename={file_path}".format(file_path=file_path) }
+        headers=headers
     )
 
 
