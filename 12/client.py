@@ -27,7 +27,7 @@ async def main():
         games = await client.get_games()
         if len(games) == 0:
             print('No games')
-        else:    
+        else:
             for record in games:
                 print('{}: {}'.format(record['id'], record['name']))
 
@@ -35,17 +35,22 @@ async def main():
             input_str = input()
             if 'new' in input_str:
                 parts = input_str.split()
-                name = parts[1].strip() if len(parts) > 1 else ''
+                name = ' '.join(parts[1:]) if len(parts) > 1 else ''
                 gameid = await client.create_game(name)
                 player = 1
                 break
             else:
-                if input_str not in [x['id'] for x in games]:
+                try:
+                    x = int(input_str)
+                    if x not in [x['id'] for x in games]:
+                        raise Exception()
+                except:
                     print('Invalid game \'{}\''.format(input_str))
-                else:
-                    gameid = int(input_str)
-                    player = 2
-                    break
+                    continue
+
+                gameid = x
+                player = 2
+                break
 
 
         waiting = False
@@ -77,11 +82,11 @@ async def main():
                         waiting = True  
             else:
                 if status['winner'] == player:
-                    print('You win')
+                    print('YOU WIN')
                 elif status['winner'] == 0:
-                    print('Draw')
+                    print('DRAW')
                 else:
-                    print('You lose')
+                    print('YOU LOSE')
                 break
             await asyncio.sleep(1)
 

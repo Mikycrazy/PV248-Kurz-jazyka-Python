@@ -77,7 +77,7 @@ class Game():
         for x in range(3):
             for y in range(3):
                 if self.board[x][y] != 0:
-                    display_text(self.get_peace(self.board[x][y]), self.display[x][y], 40)
+                    display_text(self.get_peace(self.board[x][y]), self.display[x][y], 60)
 
     async def mouse_event(self):
         mouse = pygame.mouse.get_pos()
@@ -88,7 +88,9 @@ class Game():
             x = (mouse[0] - BOARD_PADDING) // FIELD_SIZE
             print((x, y))
             if self.turn == self.player:
-                await self.client.play(self.gameid, self.player, x, y)
+                res = await self.client.play(self.gameid, self.player, x, y)
+                if res['status'] == 'bad':
+                    print(res['message']) 
 
 
     async def update_status(self):
@@ -97,7 +99,6 @@ class Game():
         if 'winner' in status:
             self.gameOver(status['winner'])
             return False
-
 
         if 'board' in status:
             self.board = status['board']
@@ -110,7 +111,7 @@ class Game():
     def gameOver(self, winner):
         gameDisplay.fill(white)    
         font = pygame.font.SysFont("Arial", 80, True) 
-        text = "Draw" if winner == 0 else "You win" if winner == self.player else "You lose"
+        text = "DRAW" if winner == 0 else "YOU WIN" if winner == self.player else "YOU LOSE"
         text_ = font.render(text, True, red)
         rect = text_.get_rect()
         rect.center = (SIZE // 2, SIZE // 2)
@@ -131,9 +132,6 @@ def display_text(text, place, size):
 async def game_intro(client):
     gameid = None
     player = None
-
-
-
     intro = True
     while intro:
         games = await client.get_games()
@@ -144,11 +142,7 @@ async def game_intro(client):
                 quit()
                 
         gameDisplay.fill(white)
-        largeText = pygame.font.SysFont('Ariel',80)
-        TextSurf, TextRect = text_objects("TicTacToe", largeText)
-        TextRect.center = ((SIZE/2),40)
-        gameDisplay.blit(TextSurf, TextRect)
-
+        display_text("TicTacToe", ((SIZE/2),40), 80)
         mouse = pygame.mouse.get_pos()
         click = pygame.mouse.get_pressed()
         #print(mouse)
@@ -178,7 +172,7 @@ async def game_intro(client):
                     intro = False
             else:
                 pygame.draw.rect(gameDisplay, light_gray, (BOARD_PADDING, list_start_y + (i * (list_item_size + 5)), SIZE - (2 * BOARD_PADDING), list_item_size))
-            display_text(game['name'], ((SIZE//2), list_start_y + (i * (list_item_size + 5)) + list_item_size // 2), 25)
+            display_text('{}: {}'.format(game['id'], game['name']), ((SIZE//2), list_start_y + (i * (list_item_size + 5)) + list_item_size // 2), 25)
 
         pygame.display.update()
         clock.tick(15)
