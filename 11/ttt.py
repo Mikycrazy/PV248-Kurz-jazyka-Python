@@ -5,7 +5,7 @@ from aiohttp import web
 import json
 from board import Board
 
-PORT = 15555
+
 
 class Counter(object):
     def __init__(self, start=1):
@@ -43,8 +43,11 @@ class Game:
         if x not in (0, 1, 2) or y not in (0, 1, 2):
             raise ValueError('Invalid coordinates')
 
-        self.state = 'Running'
         self.board.place(self.get_peace(player), ((y * 3) + x))
+
+        if player == 2:
+            self.state = 'Running'
+
 
     @staticmethod
     def get_player(peace):
@@ -122,6 +125,13 @@ class Handler:
     async def handle_list(self, request):
         d = [{'id':game.id, 'name':game.name} for game in self.games.values() if game.state == 'Empty']
         return web.json_response(d)   
+
+PORT = 15555
+
+if len(sys.argv) < 2:
+    exit("Too less arguments calling script")
+
+PORT = int(sys.argv[1])
 
 app = web.Application()
 handler = Handler()
