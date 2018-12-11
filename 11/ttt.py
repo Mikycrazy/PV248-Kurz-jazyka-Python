@@ -5,8 +5,6 @@ from aiohttp import web
 import json
 from board import Board
 
-
-
 class Counter(object):
     def __init__(self, start=1):
         self.count = start
