@@ -1,0 +1,23 @@
+review od 422236, *0.5, review mi pomohlo objasnit příčinu problému v uloze 6 a dále užitečné informace k formátu kodu a vyvarování se chyb.
+
+
+06:
+Mas chybu v tom ako to splitujes. Spravne odstranis koniec, ale splitnes to M-krat (pouzivam premenne z tvojho kodu). Z toho ti vyjde zly tvar matice, takze to potom transponujes aby si mal zdanlivo spravny tvar.
+Potom po transpozicii mas na riadku vzdy prvky, ktore nejdu v originalnom audiu za sebou, ale prvky ktore su vzdialene vzdy N // M od seba. Co dava potom zmysel kedze vysledky mas N // M krat vacsie ako by mali byt.
+Takze odporucam to inteligentne splitnut bez transponovania. Skontroluj si to na subore Stereo_1000_80 co daval niekto do fora. Vzdy ako prvy element riadku by tam mala byt 0, kedze je to pekna sinusovska frekvencia.
+Taktiez, peak je definovany ako  >= 20 * avg, ty to definujes ako ostro vacsie. Naviac, ta podmienka sa trochu tazsie cita kedze je "otocena", lahsie by to bolo ako value >= 20 * avg, hlavne kvoli prirodzenemu poradiu slov. Viem ze niektore firmy asi maju v guidelinoch 'constant == variable' aby sa zabranilo priradeniu do premennej ak das len jedno '=', ale stoji to za zamyslenie z pohladu citatelnosti kodu. 
+Z hladiska citatelnosti by som mozno namiesto jednopismenkovych premennych pouzival nieco vystiznejsie. Lahsie sa potom orientuje v kode. Taktiez by bol kod viac samo dokumentujuci a neboli by potrebne komentare. Inak to je napisane velmi pekne a vystizne. 
+
+ 
+05:
+Vypisujes naviac vstupne rovnice, co nebolo definovane v zadani. Ak to ale nevadilo vyhodnocovaciemu skriptu tak je to asi OK. 
+Dost mi tam chybaju komentare. Kedze som to uz programoval tak viem co tam mam presne hladat, ale pre niekoho kto videl len zadanie to nemusi byt velmi jednoduche. Taktiez problem s pouzitim jedno pismenkovch premennych ako a,b,m,c ktore neviem co chcu presne reprezentovat. Mohol si radsej spravit z coeficient a constant np.array a priradit to naspat do tych premennych.  
+Pekne pouzitie re.finditer, naucil som sa ze aj take nieco existuje.
+Az na vyssie poznamky si myslim ze kod je vcelku zrozumitelny. 
+
+08:
+Kluc "passed" by som spravil integer aj v stat.py, nielen v student.py, ale to je len taky nitpick :). 
+Chvalim za pouzitie pandas namiesto pocitania vsetkeho cez numpy. Kvantily si mohol ale jednoducho dostat z df pomocou df.quantile(q=0.25) a df.quantile(q=0.75). Taktiez tam robis celkovo dost operacii na manipulaciu toho dataframu do pre teba vhodnej struktury. Dalo sa to vyriesit omnoho jednoduchsie, ale stale je to lepsie ako pouzivat na vsetko numpy. 
+Pri exite by malo byt spravne v anglictine "Too few...", nie less.
+Zase sa objavili premenne s jednym pismenom, na to si davaj do buducna trochu viac pozor. Na druhu stranu viem ze to je skolsky projekt a nikomu sa nechce rozmyslat nad vystiznymi nazvami pre niektore temporary veci.
+Inak je kod na velmi dobrej urovni a rychlo pochopitelny. 
